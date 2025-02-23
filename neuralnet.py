@@ -3,19 +3,22 @@ from torch.utils.data import Dataset, DataLoader
 import torch.functional as F
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from math import floor, ceil
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import mean_squared_error
+import numpy as np
 
-n_attrs = 10
 
 #Nerual Net Hyperparams.
 USE_RELU = True
 DEPTH = 5       #How many layers?
-WIDTH = 4       #Width of layers
+WIDTH = 50       #Width of layers
 L2_NORM = 0.01
 
 EPOCHS = 10
 STOCHASTIC = False
-LEARNING_RATE = 0.1
+LEARNING_RATE = 0.001
 BATCH_NUM = 5
 BATCH_SIZE = 32
 
@@ -29,16 +32,39 @@ class CSV_Dataset(Dataset):
         return len(self.data)
     
     def __getitem__(self, index):                       #TODO: Need to convert categorical vars to other datatype, for NN
-        sample = self.data.iloc[index, 7:9].values
-        label = self.data.iloc[index, -1]
-        return torch.tensor(sample.astype(dtype=float), dtype=torch.float32),torch.tensor(label.astype(float), dtype=torch.float32)
+        sample = self.data[index][:-1]
+        label = self.data[index][-1]
+        return torch.tensor(sample.astype(dtype=float), dtype=torch.float32),torch.tensor(label.astype(float), dtype=torch.float32).view(-1)
 
 #Load & Split Data into train,eval,test
 dataset = 'car_price_dataset.csv'
 data = pd.read_csv(f'./data/{dataset}')                 #This is all the data, but it becomes the train_data later
-train_data,temp_data = train_test_split(data, test_size=.3, random_state=42)
+
+
+# Preprocessing pipelines for features
+numeric_transformer = Pipeline(steps=[('scaler', StandardScaler())])
+categorical_transformer = Pipeline(steps=[('onehot', OneHotEncoder(drop='first', sparse_output=False))])
+
+# Define categorical and numerical features
+categorical_cols = ['Brand', 'Model', 'Fuel_Type', 'Transmission']
+numerical_cols = ['Year', 'Engine_Size', 'Mileage', 'Doors', 'Owner_Count']
+
+preprocessor = ColumnTransformer(transformers=[
+    ('num', numeric_transformer, numerical_cols),
+    ('cat', categorical_transformer, categorical_cols)
+])
+
+# Fit and transform features
+processed_data = preprocessor.fit_transform(data[numerical_cols + categorical_cols]).astype(np.float32)
+length,n_attrs = processed_data.shape
+
+
+#Split Data
+train_data,temp_data = train_test_split(np.concatenate((processed_data,data['Price'].to_numpy().reshape(-1,1)), axis=1), test_size=.3, random_state=42)
 val_data,test_data = train_test_split(temp_data, test_size=1/3, random_state=42)
-length,n_attrs = train_data.shape
+
+
+print(f"# Attributes\t{n_attrs}")
 print(train_data.shape)
 print(val_data.shape)
 print(test_data.shape)
@@ -56,6 +82,7 @@ print("Datasets saved")
 
 
 
+
 class MLP(torch.nn.Module):
     def __init__(self):
         super().__init__()
@@ -68,18 +95,42 @@ class MLP(torch.nn.Module):
         #print(self.layers)
 
     def forward(self, x):
-        self.layers(x)
+        return self.layers(x)
 
 model = MLP()
+criterion = torch.nn.MSELoss()
 optim = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
 
 #Training
+model.train()
 for epoch in range(EPOCHS):
-    print(f"Epoch {epoch}")
-    for batch_idx,(data,target) in enumerate(train_dl):         #Used for mini-batching
-        print(f"\tBatch {batch_idx}")
+    for batch_idx,(features,target) in enumerate(train_dl):     #Used for mini-batching
         optim.zero_grad()                                       #Set gradient to zero
-        output = model(data)                                    #Generate our prediction
-        loss = torch.nn.MSELoss(output, target)                 #TODO: Is the loss correct?
-        loss.backward()
-        optim.step()
+        output = model(features)                                #Generate our prediction
+        loss = criterion(output, target)                        #Calculate Loss
+        if batch_idx==0:
+            print(f"Epoch {epoch}\tLoss:\t{loss}")
+        loss.backward()                                         #Compute Gradient
+        optim.step()                                            #Update Model Params"""
+
+#Validation
+
+
+
+#Testing
+model.eval()
+predictions = np.array([])
+targets = np.array([])
+with torch.no_grad():
+    for features,target in test_dl:
+        output = model(features)
+        predictions = np.concatenate((predictions,output.flatten()))        #[32]
+        targets = np.concatenate((targets,target.flatten()))                #[32]
+
+predictions = np.array(predictions)
+targets = np.array(targets)
+
+
+mse = mean_squared_error(targets, predictions)
+print(f"Test MSE: {mse}")
+
