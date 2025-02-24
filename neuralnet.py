@@ -9,7 +9,6 @@ from sklearn.pipeline import Pipeline
 from sklearn.metrics import mean_squared_error
 import numpy as np
 
-
 #Nerual Net Hyperparams.
 USE_RELU = True
 DEPTH = 5       #How many layers?
@@ -58,11 +57,9 @@ preprocessor = ColumnTransformer(transformers=[
 processed_data = preprocessor.fit_transform(data[numerical_cols + categorical_cols]).astype(np.float32)
 length,n_attrs = processed_data.shape
 
-
 #Split Data
 train_data,temp_data = train_test_split(np.concatenate((processed_data,data['Price'].to_numpy().reshape(-1,1)), axis=1), test_size=.3, random_state=42)
 val_data,test_data = train_test_split(temp_data, test_size=1/3, random_state=42)
-
 
 print(f"# Attributes\t{n_attrs}")
 print(train_data.shape)
@@ -79,9 +76,6 @@ train_dl = DataLoader(CSV_Dataset(train_data), batch_size=BATCH_SIZE, shuffle=Tr
 val_dl = DataLoader(CSV_Dataset(val_data), batch_size=BATCH_SIZE, shuffle=True)
 test_dl = DataLoader(CSV_Dataset(test_data), batch_size=BATCH_SIZE, shuffle=True)
 print("Datasets saved")
-
-
-
 
 class MLP(torch.nn.Module):
     def __init__(self):
@@ -115,8 +109,6 @@ for epoch in range(EPOCHS):
 
 #Validation
 
-
-
 #Testing
 model.eval()
 predictions = np.array([])
@@ -132,5 +124,8 @@ targets = np.array(targets)
 
 
 mse = mean_squared_error(targets, predictions)
+print(f"Shape: {targets.shape}")
+raw_error = np.sum(np.abs(targets - predictions)) / targets.shape[0]
+print(f"Raw Error: {raw_error}")
 print(f"Test MSE: {mse}")
 
