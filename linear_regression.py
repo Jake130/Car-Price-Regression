@@ -12,11 +12,11 @@ import matplotlib.pyplot as plt
 
 #Nerual Net Hyperparams.
 USE_RELU = True
-DEPTH = 5       #How many layers?
+DEPTH = 1       #How many layers?
 WIDTH = 50       #Width of layers
 L2_NORM = 0.01
 
-EPOCHS = 10
+EPOCHS = 150
 STOCHASTIC = False
 LEARNING_RATE = 0.001
 BATCH_NUM = 5
@@ -80,13 +80,7 @@ print("Datasets saved")
 class MLP(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.layers = torch.nn.Sequential(
-            torch.nn.Linear(n_attrs, WIDTH),
-            torch.nn.ReLU() if USE_RELU	else torch.nn.Sigmoid(),
-            *[torch.nn.Linear(WIDTH,WIDTH) if (i%2==0) else torch.nn.ReLU() if USE_RELU else torch.nn.Sigmoid() for i in range(DEPTH*2)],
-            torch.nn.Linear(WIDTH, 1)
-        )
-        #print(self.layers)
+        self.layers = torch.nn.Linear(n_attrs, 1)
 
     def forward(self, x):
         return self.layers(x)
@@ -95,21 +89,24 @@ model = MLP()
 criterion = torch.nn.MSELoss()
 optim = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
 
-loss_tracker = np.array([])
 #Training
+loss_tracker = []
 model.train()
 for epoch in range(EPOCHS):
+    epoch_loss = 0
     for batch_idx,(features,target) in enumerate(train_dl):     #Used for mini-batching
         optim.zero_grad()                                       #Set gradient to zero
         output = model(features)                                #Generate our prediction
         loss = criterion(output, target)
-        loss_tracker = np.append(loss_tracker, loss.item())                        #Calculate Loss
+        epoch_loss += loss.item()                      #Calculate Loss
         if batch_idx==0:
             print(f"Epoch {epoch}\tLoss:\t{loss}")
         loss.backward()                                         #Compute Gradient
         optim.step()                                            #Update Model Params"""
+    loss_tracker.append(epoch_loss / len(train_dl))
 
-x_axis = np.arange(len(loss_tracker))
+x_axis = range(len(loss_tracker))
+
 plt.plot(x_axis, loss_tracker)
 plt.show()
 
@@ -117,15 +114,12 @@ plt.show()
 model.eval()
 predictions = np.array([])
 targets = np.array([])
+
 with torch.no_grad():
     for features,target in test_dl:
         output = model(features)
         predictions = np.concatenate((predictions,output.flatten()))        #[32]
         targets = np.concatenate((targets,target.flatten()))                #[32]
-
-predictions = np.array(predictions)
-targets = np.array(targets)
-
 
 mse = mean_squared_error(targets, predictions)
 print(f"Shape: {targets.shape}")
