@@ -1,0 +1,30 @@
+#!/bin/bash
+# Script to Run Test Set Evaluation
+#
+# by Alex João Peterson Santos
+# March 7, 2025
+# for CS 453 Project
+#
+# Runs the test.py script to evaluate the model on the test set.
+# You will need to update the Python command to match the model, state dict, and hyperparameters used during training.
+
+#SBATCH --account=
+#SBATCH --partition=gpu
+#SBATCH --job-name=run_test
+#SBATCH --mem=2000M
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=1
+#SBATCH --time=0-00:00:05
+#SBATCH --nodes=1
+#SBATCH --gpus=1
+#SBATCH --gres=gpu:1
+#SBATCH --output=
+#SBATCH --error=
+
+date
+module load miniconda3
+conda activate cs453_proj
+# usage
+# python3.11 -u test.py <model> <state_dict> <hyperparameters (same as train.py arguments)>
+# python3.11 -u <path to test script> <model name> <hyperparameters (same as train.py args)>
+date
