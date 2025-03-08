@@ -19,8 +19,8 @@ MODELNAME="basic_nn0"
 ##### HYPERPARAMETER VALUES #####
 
 VALS0= # dataset directory (will not iterate over this)
-VALS1=("2 4 6 8") # depth
-VALS2=("16 32 64") # width
+VALS1=("2" "4" "6" "8") # depth
+VALS2=("16" "32" "64") # width
 VALS3=("4" "16" "32") # batch size
 VALS4=("0.001" "0.01") # learning rate
 VALS5=("-1" "0.9" "0.99") # SGD momentum (-1 for AlanW)
@@ -48,7 +48,7 @@ create_batch_file() {
 date
 module load miniconda3
 conda activate cs453_proj
-python3.11 -u ${MLPROJDIR}/job_scripts/train.py ${MODELNAME} ${2} ${3} ${4} ${5} ${6} ${7} ${8}`
+python3.11 -u ${MLPROJDIR}/job_scripts/train.py ${MODELNAME} ${2} ${3} ${4} ${5} ${6} ${7} ${8}
 date
 EOF
 }
@@ -73,7 +73,6 @@ fi
 
 # fixed values (we did not iterate over these)
 V0=$VALS0
-V2=$VALS2
 
 # calculate number of jobs to submit
 NUMJOBS=0
@@ -86,7 +85,7 @@ for V1 in "${VALS1[@]}"; do
                 for V5 in "${VALS5[@]}"; do
                     for V6 in "${VALS6[@]}"; do
                         NUMJOBS=$((NUMJOBS+1))
-                        JOBNAME=run_train_${MODELNAME}_${V1}_bs${V3}_lr${V4}_sm${V5}
+                        JOBNAME=run_train_${MODELNAME}_${V1}x${V2}_bs${V3}_lr${V4}_sg${V5}_rl${V6}
                         create_batch_file "$JOBNAME" "$V0" "$V1" "$V2" "$V3" "$V4" "$V5" "$V6"
                         JOBLIST+=("$JOBNAME")
                     done

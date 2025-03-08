@@ -10,4 +10,4 @@
 module load miniconda3
 conda create -y -n cs453_proj python=3.11
 conda activate cs453_proj
-conda install -y pytorch torchvision torchaudio pytorch-cuda=12.1 numpy pandas -c pytorch -c nvidia
+conda install -y pytorch torchvision torchaudio pytorch-cuda=12.1 scikit-learn numpy pandas -c pytorch -c nvidia

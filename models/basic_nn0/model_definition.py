@@ -49,32 +49,38 @@ class Argument:
         self.dataset_dir = values[0]
 
         # valid depth (num layers)
+        values[1] = int(values[1])
         if values[1] % 1 != 0 or values[1] < 1:
             raise ValueError(f"Invalid depth: {values[1]}")
         self.depth = int(values[1])
 
         # valid width (num neurons per layer)
+        values[2] = int(values[2])
         if values[2] % 1 != 0 or values[2] < 1:
                     raise ValueError(f"Invalid width: {values[2]}")
         self.width = int(values[2])
 
         # valid batch size
+        values[3] = int(values[3])
         if values[3] % 1 != 0 or values[3] < 1:
             raise ValueError(f"Invalid batch size: {values[3]}")
         self.batch_size = int(values[3])
 
         # valid learning rate
+        values[4] = float(values[4])
         if values[4] <= 0:
             raise ValueError(f"Invalid learning rate: {values[4]}")
         self.learning_rate = float(values[4])
 
         # valid SGD momentum (-1 is a special reserved value)
+        values[5] = float(values[5])
         if values[5] != -1 and (values[5] <= 0 or values[5] >= 1):
             raise ValueError(f"Invalid SGD momentum: {values[5]}")
         self.use_sgd = values[5] != -1
         self.sgd_momentum = float(values[5])
 
         # valid use ReLU
+        values[6] = int(values[6])
         if values[6] not in [0, 1]:
             raise ValueError(f"Invalid use ReLU: {values[6]}")
         self.use_relu = bool(values[6])
@@ -87,8 +93,8 @@ class Argument:
             self.width,
             self.batch_size,
             self.learning_rate,
-            "no" if not self.use_sgd else self.sgd_momentum,
-            "y" if self.use_relu else "no"
+            "-1" if not self.use_sgd else self.sgd_momentum,
+            "1" if self.use_relu else "0"
         )
 
     def __str__(self):
@@ -148,7 +154,7 @@ def create_model(args: Argument):
     """
     Create and return the model.
     """
-    return Model()
+    return Model(args)
 
 
 # loss function definition
@@ -181,7 +187,7 @@ class CarPriceDataset(Dataset):
         assert type in ["train", "test", "val"]
         self.directory = args.dataset_dir
         self.type = type
-        file_path = os.path.join(self.directory, f"{type}_t_car_price_dataset.csv")
+        file_path = os.path.join(self.directory, f"{type}_t_car_price_dataset.pkl")
 
         # load the data
         with open(file_path, 'rb') as f:
