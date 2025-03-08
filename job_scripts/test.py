@@ -21,6 +21,10 @@ import torch
 import csv
 import re
 
+# constants
+# margins (dollar amount) to consider a prediction correct
+CORRECT_MARGINS = [0, 10, 100, 1000]
+
 # check for arguments (needed for resolving model_definition.py)
 if len(sys.argv) <= 1:
     raise ValueError("test.py: No model directory provided")
@@ -92,8 +96,8 @@ def evaluate(model, dataloader, loss_fn, device):
     if dataloader.dataset.type != "test":
         raise ValueError(f"test.py: Dataloader for evaluation is not of type 'test'")
     num_batches = len(dataloader)
-    CORRECT_MARGIN = 500
-    total_test_loss, correct_within_margin = 0, 0
+    correct_within_margin = [0] * len(CORRECT_MARGINS)
+    total_test_loss = 0
     with torch.no_grad():
         for X, y in dataloader:
             # move to GPU
@@ -107,14 +111,17 @@ def evaluate(model, dataloader, loss_fn, device):
             # make prediction and run loss function
             pred = model(X)
             total_test_loss += loss_fn(pred, y).item()
-            correct_within_margin += (torch.abs(pred - y) <= CORRECT_MARGIN).type(torch.float).sum().item()
+            for margin in CORRECT_MARGINS:
+                correct_within_margin[margin] += (torch.abs(pred - y) <= margin).type(torch.float).sum().item()
     result = {
         "test total loss": total_test_loss,
         "test avg batch loss": total_test_loss / num_batches,
-        "test num correct": correct_within_margin,
-        "test accuracy": correct_within_margin / size * 100,
     }
-    print(", ".join([f"{key}: {val}" for key, val in result.items()]))
+    for margin in CORRECT_MARGINS:
+        result[f"test correct margin{margin}"] = correct_within_margin[margin]
+        result[f"test accuracy margin{margin}"] = correct_within_margin[margin] / size * 100
+    for key, val in result.items():
+        print(f"{key}: {val}")
     return result
 
 

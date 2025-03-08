@@ -20,8 +20,8 @@ MODELNAME="basic_nn0"
 
 VALS0= # dataset directory (will not iterate over this)
 VALS1=("2" "4" "6" "8") # depth
-VALS2=("16" "32" "64") # width
-VALS3=("4" "16" "32") # batch size
+VALS2=("8" "16" "32") # width
+VALS3=("4" "8" "16") # batch size
 VALS4=("0.001" "0.01") # learning rate
 VALS5=("-1" "0.9" "0.99") # SGD momentum (-1 for AlanW)
 VALS6=("0" "1") # use ReLU (uses sigmoid if 0)

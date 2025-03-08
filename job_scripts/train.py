@@ -27,7 +27,15 @@ import math
 EPOCHS_CHECKPOINT = 2
 # epochs until training stops
 MAX_EPOCHS = 20
+# margins (dollar amount) to consider a prediction correct
+CORRECT_MARGINS = [0, 10, 100, 1000]
+# margin to use for deciding whether to save state dict
+SAVE_STATE_DICT_MARGIN = 100
+# accuracy (within that margin) to save state dict
+SAVE_STATE_DICT_ACCURACY = 0.95
+
 assert MAX_EPOCHS % EPOCHS_CHECKPOINT == 0
+assert SAVE_STATE_DICT_MARGIN in CORRECT_MARGINS
 
 # check for arguments (needed for resolving model_definition.py)
 if len(sys.argv) <= 1:
@@ -146,8 +154,8 @@ def evaluate(model, dataloader, loss_fn, device):
     if dataloader.dataset.type != "val":
         raise ValueError(f"train.py: Dataloader for evaluation is not of type 'val'")
     num_batches = len(dataloader)
-    CORRECT_MARGIN = 500
-    total_test_loss, correct_within_margin = 0, 0
+    correct_within_margin = {margin: 0 for margin in CORRECT_MARGINS}
+    total_test_loss = 0
     with torch.no_grad():
         for X, y in dataloader:
             # move to GPU
@@ -161,14 +169,17 @@ def evaluate(model, dataloader, loss_fn, device):
             # make prediction and run loss function
             pred = model(X)
             total_test_loss += loss_fn(pred, y).item()
-            correct_within_margin += (torch.abs(pred - y) <= CORRECT_MARGIN).type(torch.float).sum().item()
+            for margin in CORRECT_MARGINS:
+                correct_within_margin[margin] += (torch.abs(pred - y) <= margin).type(torch.float).sum().item()
     result = {
         "val total loss": total_test_loss,
         "val avg batch loss": total_test_loss / num_batches,
-        "val num correct": correct_within_margin,
-        "val accuracy": correct_within_margin / size * 100,
     }
-    print(", ".join([f"{key}: {val}" for key, val in result.items()]))
+    for margin in CORRECT_MARGINS:
+        result[f"val correct margin{margin}"] = correct_within_margin[margin]
+        result[f"val accuracy margin{margin}"] = correct_within_margin[margin] / size * 100
+    for key, val in result.items():
+        print(f"{key}: {val}")
     return result
 
 
@@ -266,7 +277,7 @@ def main():
         if epoch % EPOCHS_CHECKPOINT == 0:
             print("Recording performance and saving state dict")
             save_record(args, epoch, result)
-            if result["val accuracy"] < 0.95:
+            if result[f"val accuracy margin{SAVE_STATE_DICT_MARGIN}"] < SAVE_STATE_DICT_ACCURACY:
                 print("Skipping state dict save due to low accuracy")
                 continue
             save_state_dict(model, args, epoch)
