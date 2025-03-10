@@ -85,7 +85,7 @@ for V1 in "${VALS1[@]}"; do
                 for V5 in "${VALS5[@]}"; do
                     for V6 in "${VALS6[@]}"; do
                         NUMJOBS=$((NUMJOBS+1))
-                        JOBNAME=run_train_${MODELNAME}_${V1}x${V2}_bs${V3}_lr${V4}_sg${V5}_rl${V6}
+                        JOBNAME=run_train_${MODELNAME}_${V1}x${V2}_bs${V3}_lr${V4}_sg${V5}_lk${V6}
                         create_batch_file "$JOBNAME" "$V0" "$V1" "$V2" "$V3" "$V4" "$V5" "$V6"
                         JOBLIST+=("$JOBNAME")
                     done
