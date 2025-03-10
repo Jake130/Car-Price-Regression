@@ -23,16 +23,16 @@ import csv
 import math
 
 # constants
-# how often to save model weights
+# how often to save validation performance and model weights
 EPOCHS_CHECKPOINT = 2
 # epochs until training stops
-MAX_EPOCHS = 20
+MAX_EPOCHS = 50
 # margins (dollar amount) to consider a prediction correct
 CORRECT_MARGINS = [0, 10, 100, 1000]
 # margin to use for deciding whether to save state dict
-SAVE_STATE_DICT_MARGIN = 100
+SAVE_STATE_DICT_MARGIN = 10
 # accuracy (within that margin) to save state dict
-SAVE_STATE_DICT_ACCURACY = 0.95
+SAVE_STATE_DICT_ACCURACY = 0.99
 
 assert MAX_EPOCHS % EPOCHS_CHECKPOINT == 0
 assert SAVE_STATE_DICT_MARGIN in CORRECT_MARGINS
