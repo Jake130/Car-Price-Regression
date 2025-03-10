@@ -18,35 +18,36 @@ import os
 CSV_DATASET_FILEPATH = '../data/car_price_dataset.csv'
 SAVE_TO_PKL_DIRPATH = '../data/transformed/'
 
-#Load & Split Data into train,eval,test
+# load dataset from CSV
 dataset = 'car_price_dataset.csv'
 data = pd.read_csv(CSV_DATASET_FILEPATH)
 
-# Preprocessing pipelines for features
+# Define how to transform each feature type
+numerical_cols = ['Year', 'Engine_Size', 'Mileage', 'Doors', 'Owner_Count']
 numeric_transformer = Pipeline(steps=[('scaler', StandardScaler())])
+categorical_cols = ['Brand', 'Model', 'Fuel_Type', 'Transmission']
 categorical_transformer = Pipeline(steps=[('onehot', OneHotEncoder(drop='first', sparse_output=False))])
 
-# Define categorical and numerical features
-categorical_cols = ['Brand', 'Model', 'Fuel_Type', 'Transmission']
-numerical_cols = ['Year', 'Engine_Size', 'Mileage', 'Doors', 'Owner_Count']
-
+# Fit and transform features into a (samples, features) numpy array
 preprocessor = ColumnTransformer(transformers=[
     ('num', numeric_transformer, numerical_cols),
     ('cat', categorical_transformer, categorical_cols)
 ])
+transformed_input_data = preprocessor.fit_transform(data[numerical_cols + categorical_cols]).astype(np.float32)
 
-# Fit and transform features
-processed_data = preprocessor.fit_transform(data[numerical_cols + categorical_cols]).astype(np.float32)
-length,n_attrs = processed_data.shape
-print(f"n_attrs: {n_attrs}")
+num_samples, num_features = transformed_input_data.shape
+print(f"Transformed input data contains {num_samples} samples and {num_features} features")
+
+# Concatenate untransformed target as the last column of the array, now (samples, features+target)
+transformed_concatenated_data = np.concatenate((transformed_input_data, data['Price'].to_numpy().reshape(-1, 1)), axis=1)
 
 #Split Data
-train_data,temp_data = train_test_split(np.concatenate((processed_data,data['Price'].to_numpy().reshape(-1,1)), axis=1), test_size=.3, random_state=42)
-val_data,test_data = train_test_split(temp_data, test_size=1/3, random_state=42)
+train_data, unseen_data = train_test_split(np.concatenate((transformed_input_data,data['Price'].to_numpy().reshape(-1,1)), axis=1), test_size=.3, random_state=42)
+val_data, test_data = train_test_split(unseen_data, test_size=1/3, random_state=42)
 
-print(f"Training data (samples, features): {train_data.shape}")
-print(f"Validation data (samples, features): {val_data.shape}")
-print(f"Test data (samples, features): {test_data.shape}")
+print(f"Training data (samples, features+target): {train_data.shape}")
+print(f"Validation data (samples, features+target): {val_data.shape}")
+print(f"Test data (samples, features+target): {test_data.shape}")
 
 # erase existing pickles, if any
 if os.path.exists(SAVE_TO_PKL_DIRPATH):

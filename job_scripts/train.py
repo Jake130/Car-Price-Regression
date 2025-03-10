@@ -177,7 +177,7 @@ def evaluate(model, dataloader, loss_fn, device):
     }
     for margin in CORRECT_MARGINS:
         result[f"val correct margin{margin}"] = correct_within_margin[margin]
-        result[f"val accuracy margin{margin}"] = correct_within_margin[margin] / size * 100
+        result[f"val accuracy margin{margin}"] = correct_within_margin[margin] / size
     for key, val in result.items():
         print(f"{key}: {val}")
     return result
