@@ -14,7 +14,7 @@
 ACCOUNT= # fill this in with PIRG name
 USERNAME= # fill this in with your username
 MLPROJDIR= # fill this in with the path to the root of the project
-MODELNAME="basic_nn0"
+MODELNAME="basic_nn1"
 
 ##### HYPERPARAMETER VALUES #####
 
