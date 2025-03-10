@@ -19,10 +19,10 @@ MODELNAME="basic_nn0"
 ##### HYPERPARAMETER VALUES #####
 
 VALS0= # dataset directory (will not iterate over this)
-VALS1=("2" "4" "6" "8") # depth
-VALS2=("8" "16" "32") # width
-VALS3=("4" "8" "16") # batch size
-VALS4=("0.001" "0.01") # learning rate
+VALS1=("2" "4" "6" "8" "16") # depth
+VALS2=("8" "16" "32" "64") # width
+VALS3=("4" "8" "16" "32") # batch size
+VALS4=("0.0001" "0.0005" "0.001" "0.01") # learning rate
 VALS5=("-1" "0.9" "0.99") # SGD momentum (-1 for AlanW)
 VALS6=("0" "1") # use leaky ReLU (uses standard ReLU if 0)
 
