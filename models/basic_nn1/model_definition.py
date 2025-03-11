@@ -86,7 +86,7 @@ class Argument:
         self.use_leaky_relu = bool(values[6])
 
         # create model name
-        self.generic_name = "basic_nn0"
+        self.generic_name = "basic_nn1"
         self.name = "{}_{}x{}_bs{}_lr{}_sg{}_lk{}".format(
             self.generic_name,
             self.depth,
