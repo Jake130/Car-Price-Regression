@@ -13,7 +13,7 @@ import sys
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def plot_graphs(filepath):
+def plot_loss(filepath):
     # Read the CSV file
     data = pd.read_csv(filepath)
 
@@ -50,10 +50,22 @@ def plot_graphs(filepath):
     # Show plot
     plt.show()
 
-if __name__ == '__main__':
-    if len(sys.argv) != 2:
-        print("Usage: python script.py <csv_file_path>")
-        sys.exit(1)
+def bad_usage():
+    print("Accuracy: python script.py <csv_file_path> -m <margin>")
+    print("Loss: python script.py <csv_file_path> -l")
+    exit(1)
 
-    filepath = sys.argv[1]
-    plot_graphs(filepath)
+if __name__ == '__main__':
+    if len(sys.argv) < 3:
+        bad_usage()
+    if sys.argv[2] == "-m":
+        try:
+            int(sys.argv[3])
+        except:
+            bad_usage()
+        plot_margin(sys.argv[1], sys.argv[3])
+        exit(0)
+    if sys.argv[2] == "-l":
+        plot_loss(sys.argv[1])
+        exit(0)
+    bad_usage()
