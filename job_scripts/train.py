@@ -99,7 +99,7 @@ def check_tensor(tensor, type):
         raise ValueError(f"Found tensor which contains INF values.")
 
 
-def train(model, dataloader, loss_fn, optimizer, device):
+def train(model, dataloader, loss_fn, optimizer, device, scheduler=None, gradient_clipping_norm=0):
     """
     Define the training process for a single epoch.
     """
@@ -127,6 +127,11 @@ def train(model, dataloader, loss_fn, optimizer, device):
 
         # Backpropagation
         loss.backward()
+
+        # gradient clipping (if specified)
+        if gradient_clipping_norm != 0:
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=gradient_clipping_norm)
+
         optimizer.step()
 
         loss = loss.item()
@@ -137,6 +142,12 @@ def train(model, dataloader, loss_fn, optimizer, device):
         elif batch >= 1 and batch % interval == 0:
             current = batch * len(X)
             print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+
+    # apply learning rate schedule if available
+    if scheduler is not None:
+        scheduler.step()
+        print(f"Updated LR: {scheduler.get_last_lr()}")
+
     result = {
         "train total loss": total_loss,
         "train avg batch loss": total_loss / num_batches
@@ -259,6 +270,21 @@ def main():
     print("Creating loss function")
     loss_fn = model_definition.create_loss_function(args)
 
+    # check if args has lr_schedule
+    if hasattr(args, "lr_schedule") and args.lr_schedule > 0:
+        print("Creating learning rate scheduler")
+        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=args.lr_schedule)
+    else:
+        print("Not using learning rate schedule")
+        scheduler = None
+    
+    if hasattr(args, "gradient_clipping_norm") and args.gradient_clipping_norm > 0:
+        gradient_clipping_norm = args.gradient_clipping_norm
+        print("Using gradient clipping norm")
+    else:
+        gradient_clipping_norm = 0
+        print("Not using gradient clipping norm")
+
     print("Creating train and dev dataloaders")
     train_dataloader = model_definition.create_dataloader(args, "train")
     val_dataloader = model_definition.create_dataloader(args, "val")
@@ -267,13 +293,21 @@ def main():
     for t in range(MAX_EPOCHS):
         epoch = t + 1
         print(f"\nEpoch {epoch}")
+
+        # one round of training and backpropagation
         result = {}
-        train_result = train(model, train_dataloader, loss_fn, optimizer, device)
+        train_result = train(model, train_dataloader, loss_fn, optimizer, device, scheduler, gradient_clipping_norm)
         result.update(train_result)
+
+        # one round of evaluation on validation set
         print("Evaluation on val set:")
         val_result = evaluate(model, val_dataloader, loss_fn, device)
         result.update(val_result)
+
+        # save records
         save_curves(args, epoch, result)
+
+        # conditionally save state dict for good-performing models
         if epoch % EPOCHS_CHECKPOINT == 0:
             print("Recording performance and saving state dict")
             save_record(args, epoch, result)
