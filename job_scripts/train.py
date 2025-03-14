@@ -111,6 +111,7 @@ def train(model, dataloader, loss_fn, optimizer, device, scheduler=None, gradien
     num_batches = len(dataloader)
     interval = math.ceil(num_batches / 10)
     total_loss = 0
+    print("Training:")
     for batch, (X, y) in enumerate(dataloader):
         # move to GPU
         X = X.to(device)
@@ -153,7 +154,8 @@ def train(model, dataloader, loss_fn, optimizer, device, scheduler=None, gradien
         "train total loss": total_loss,
         "train avg batch loss": total_loss / num_batches
     }
-    print(", ".join([f"{key}: {val}" for key, val in result.items()]))
+    print("\nTraining results:")
+    print("\n".join([f"{key}: {val}" for key, val in result.items()]))
     return result
 
 
@@ -199,8 +201,9 @@ def evaluate(model, dataloader, loss_fn, device):
     for margin in CORRECT_MARGINS:
         result[f"val correct margin{margin}"] = correct_within_margin[margin]
         result[f"val accuracy margin{margin}"] = correct_within_margin[margin] / size
-    for key, val in result.items():
-        print(f"{key}: {val}")
+
+    print("\nEvaluation on validation set results:")
+    print("\n".join([f"{key}: {val}" for key, val in result.items()]))
     return result
 
 
@@ -302,7 +305,8 @@ def main():
     print("Beginning training")
     for t in range(MAX_EPOCHS):
         epoch = t + 1
-        print(f"\nEpoch {epoch}")
+        epoch_txt = f"EPOCH {epoch}"
+        print(f"\n{epoch_txt}\n{'=' * len(epoch_txt)}\n")
 
         # one round of training and backpropagation
         result = {}
@@ -310,7 +314,6 @@ def main():
         result.update(train_result)
 
         # one round of evaluation on validation set
-        print("Evaluation on val set:")
         val_result = evaluate(model, val_dataloader, loss_fn, device)
         result.update(val_result)
 
