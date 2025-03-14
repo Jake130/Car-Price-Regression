@@ -20,6 +20,7 @@ import sys
 import torch
 import csv
 import re
+import torch.nn.functional as F
 
 # constants
 # margins (dollar amount) to consider a prediction correct
@@ -98,24 +99,33 @@ def evaluate(model, dataloader, loss_fn, device):
     num_batches = len(dataloader)
     correct_within_margin = [0] * len(CORRECT_MARGINS)
     total_test_loss = 0
+    total_mse = 0
+    total_mae = 0
     with torch.no_grad():
         for X, y in dataloader:
             # move to GPU
             X = X.to(device)
             y = y.to(device)
 
-            # check for nan, inf, etc.
+            # check for nan, inf, etc. in input and label tensors
             check_tensor(X, "input")
             check_tensor(y, "label")
 
-            # make prediction and run loss function
+            # make prediction
             pred = model(X)
+
+            # performance metrics
             total_test_loss += loss_fn(pred, y).item()
+            total_mse += F.mse_loss(pred, y).item()
+            total_mae += F.l1_loss(pred, y).item()
             for margin in CORRECT_MARGINS:
                 correct_within_margin[margin] += (torch.abs(pred - y) <= margin).type(torch.float).sum().item()
+
     result = {
         "test total loss": total_test_loss,
         "test avg batch loss": total_test_loss / num_batches,
+        "test avg batch mse": total_mse / num_batches,
+        "test avg batch mae": total_mae / num_batches,
     }
     for margin in CORRECT_MARGINS:
         result[f"test correct margin{margin}"] = correct_within_margin[margin]

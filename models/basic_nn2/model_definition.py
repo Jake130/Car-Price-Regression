@@ -21,6 +21,13 @@ import torchvision.transforms as transforms
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 
+# constants
+ACTIVATION_FUNCTION_NAMES = {
+    0: "sigmoid",
+    1: "relu",
+    2: "leaky_relu"
+}
+
 
 class Argument:
     """
@@ -33,7 +40,7 @@ class Argument:
     3: Batch size
     4: Learning rate
     5: SGD momentum (-1 for AdamW optimizer instead)
-    6: Activation function ("sigmoid", "relu", "leaky_relu")
+    6: Activation function (0 sigmoid, 1 relu, 2 leaky_relu)
     7: Gradient clipping norm (0 for no clipping)
     8: Learning rate scheduling gamma (0 for no scheduling)
     """
@@ -82,8 +89,8 @@ class Argument:
         self.sgd_momentum = float(values[5])
 
         # valid activation function
-        values[6] = values[6].lower()
-        if values[6] not in ["sigmoid", "relu", "leaky_relu"]:
+        values[6] = int(values[6])
+        if values[6] not in [0, 1, 2]:
             raise ValueError(f"Invalid activation function: {values[6]}")
         self.activation_fn = values[6]
     
@@ -108,7 +115,7 @@ class Argument:
             self.batch_size,
             self.learning_rate,
             "-1" if not self.use_sgd else self.sgd_momentum,
-            {"sigmoid": "0", "relu": "1", "leaky_relu": "2"}[self.activation_fn],
+            self.activation_fn,
             self.gradient_clipping_norm,
             self.lr_schedule
         )
@@ -123,7 +130,7 @@ Batch size: {self.batch_size}
 Learning rate: {self.learning_rate}
 Use SGD: {self.use_sgd}
 SGD momentum: {"N/A" if not self.use_sgd else self.sgd_momentum}
-Activation function: {self.activation_fn}
+Activation function: {ACTIVATION_FUNCTION_NAMES[self.activation_fn]}
 Gradient clipping norm: {self.gradient_clipping_norm}
 Learning rate schedule: {self.lr_schedule}
 """
@@ -136,7 +143,7 @@ Learning rate schedule: {self.lr_schedule}
             "Learning rate": self.learning_rate,
             "Use SGD": self.use_sgd,
             "SGD momentum": "N/A" if not self.use_sgd else self.sgd_momentum,
-            "Activation function": self.activation_fn,
+            "Activation function": ACTIVATION_FUNCTION_NAMES[self.activation_fn],
             "Gradient clipping norm": self.gradient_clipping_norm,
             "Learning rate schedule": self.lr_schedule
         }
@@ -152,20 +159,19 @@ class Model(nn.Module):
         
         # activation function based on config
         activation_fn = {
-            "sigmoid": torch.nn.Sigmoid(),
-            "leaky_relu": torch.nn.LeakyReLU(negative_slope=0.01),
-            "relu": torch.nn.ReLU()
+            0: torch.nn.Sigmoid(),
+            1: torch.nn.ReLU(),
+            2: torch.nn.LeakyReLU(negative_slope=0.01)
         }[args.activation_fn]
 
-        assert isinstance(args.depth, int)
-        self.layers = torch.nn.Sequential(
-            torch.nn.Linear(48, args.width),  # 48 features
-            *[
-                activation_fn,
-                torch.nn.Linear(args.width, args.width)
-            ] * args.depth,  # Hidden layers repeated 'depth' times
-            torch.nn.Linear(args.width, 1)  # Output layer: width -> 1
-        )
+        # assemble model architecture based on hyperparameters
+        layers = [nn.Linear(48, args.width)]
+        for _ in range(args.depth):
+            layers.append(activation_fn)
+            layers.append(nn.Linear(args.width, args.width))
+        layers.append(nn.Linear(args.width, 1))
+
+        self.layers = nn.Sequential(*layers)
 
     def forward(self, x):
         return self.layers(x)

@@ -24,9 +24,9 @@ VALS2=("8" "16" "32" "64") # width
 VALS3=("8" "16" "32") # batch size
 VALS4=("0.0001" "0.0005" "0.001") # learning rate
 VALS5=("-1" "0.75" "0.85" "0.95") # SGD momentum (-1 for AlanW)
-VALS6=("sigmoid" "relu" "leaky_relu") # use leaky ReLU (uses standard ReLU if 0)
-VALS7=("0" "1" "5") # gradient clipping norm
-VALS8=("0" "0.95" "0.97") # learning rate schedule
+VALS6=("0" "1" "2") # activation function (0 sigmoid, 1 relu, 2 leaky_relu)
+VALS7=("0" "1" "5") # gradient clipping norm (0 for no clipping)
+VALS8=("0" "0.95" "0.97") # learning rate schedule (0 for no schedule)
 
 ##### DO NOT MODIFY BELOW THIS LINE #####
 

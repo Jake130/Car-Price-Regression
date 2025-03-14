@@ -21,6 +21,7 @@ import sys
 import torch
 import csv
 import math
+import torch.nn.functional as F
 
 # constants
 # how often to save validation performance and model weights
@@ -167,24 +168,33 @@ def evaluate(model, dataloader, loss_fn, device):
     num_batches = len(dataloader)
     correct_within_margin = {margin: 0 for margin in CORRECT_MARGINS}
     total_test_loss = 0
+    total_mse = 0
+    total_mae = 0
     with torch.no_grad():
         for X, y in dataloader:
             # move to GPU
             X = X.to(device)
             y = y.to(device)
 
-            # check for nan, inf, etc.
+            # check for nan, inf, etc. in input and label tensors
             check_tensor(X, "input")
             check_tensor(y, "label")
 
-            # make prediction and run loss function
+            # make prediction
             pred = model(X)
+
+            # performance metrics
             total_test_loss += loss_fn(pred, y).item()
+            total_mse += F.mse_loss(pred, y).item()
+            total_mae += F.l1_loss(pred, y).item()
             for margin in CORRECT_MARGINS:
                 correct_within_margin[margin] += (torch.abs(pred - y) <= margin).type(torch.float).sum().item()
+
     result = {
         "val total loss": total_test_loss,
         "val avg batch loss": total_test_loss / num_batches,
+        "val avg batch mse": total_mse / num_batches,
+        "val avg batch mae": total_mae / num_batches,
     }
     for margin in CORRECT_MARGINS:
         result[f"val correct margin{margin}"] = correct_within_margin[margin]
