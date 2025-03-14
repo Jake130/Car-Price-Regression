@@ -60,6 +60,13 @@ mkdir -p ./out > /dev/null
 mkdir -p ./curves > /dev/null
 mkdir -p ./saves > /dev/null
 
+# heads up if non-empty records directories
+if [ -n "$(ls -A ./out 2>/dev/null)" ] || [ -n "$(ls -A ./saves 2>/dev/null)" ] || [ -n "$(ls -A ./curves 2>/dev/null)" ] || [ -e "./${MODENAME}_records.csv" ]; then
+    echo "HEADS UP: One or more records directories are not empty, or ${MODELNAME}_records.csv exists!"
+    sleep 5
+    echo
+fi
+
 # warn about cleaning directories
 read -p "Clean dirs 'out', 'curves', 'saves', and records CSV file before running? (y/N) " -n 1 -r
 echo
