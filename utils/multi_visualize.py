@@ -114,11 +114,11 @@ def adjust_label(exclude_key, val):
 
 def plot_multi_loss(files, exclude_key):
     plt.figure()
-    plt.suptitle("Average Training and Validation Loss per Batch", fontsize=18)
+    plt.suptitle("Average Training Loss per Batch", fontsize=18)
     # Display the generated subtitle using the first file's hp dict
     subtitle = generate_subtitle(files[0], exclude_key)
     plt.title(subtitle, fontsize=14, pad=0, ha='center')
-    plt.subplots_adjust(top=0.78)
+    plt.subplots_adjust(top=0.75)
     plt.xlabel("Epochs", fontsize=14)
     plt.ylabel("Loss", fontsize=14)
     plt.xlim(0, MAX_EPOCHS)
@@ -132,7 +132,7 @@ def plot_multi_loss(files, exclude_key):
     ax.spines['bottom'].set_linewidth(2)
     ax.spines['left'].set_linewidth(2)
     
-    colors = ['blue', 'orange', 'green', 'red']  # one color per CSV file (up to 4)
+    colors = ['darkred', '#FF7518', 'navy', 'darkgreen']
     for i, file in enumerate(files):
         data = pd.read_csv(file)
         epochs = data['Epoch']
@@ -145,8 +145,8 @@ def plot_multi_loss(files, exclude_key):
         var_label = adjust_label(exclude_key, hp[exclude_key])
         full_color = colors[i % len(colors)]
         muted_color = lighten_color(full_color, amount=0.5)
-        plt.plot(epochs, val_loss, label=f"{var_label} (validation)", color=full_color, linewidth=4)
-        plt.plot(epochs, train_loss, label=f"{var_label} (training)", color=muted_color, linewidth=4)
+        plt.plot(epochs, train_loss, label=f"{var_label}", color=full_color, linewidth=4)
+        # plt.plot(epochs, train_loss, label=None, color=muted_color, linewidth=4)
     plt.legend(loc="upper right", fontsize=12)
     plt.show()
 
