@@ -71,7 +71,8 @@ def generate_subtitle(filename, exclude_key):
     af = {
         "0": "Sigmoid",
         "1": "ReLU",
-        "2": "Leaky ReLU"
+        "2": "Leaky ReLU",
+        "?": "?"
     }[hp['af']]
     try:
         hp['gc'] = int(float(hp['gc']))
@@ -94,8 +95,8 @@ def generate_subtitle(filename, exclude_key):
     return subtitle
 
 def adjust_label(exclude_key, val):
-    if exclude_key == "gc":
-        return "AdamW" if val == "-1" else f"SGD, momentum {val}"
+    if exclude_key == "sg":
+        return "AdamW" if val == "-1" else val
     if exclude_key == "af":
         return {
             "0": "Sigmoid",
@@ -109,7 +110,7 @@ def adjust_label(exclude_key, val):
             val = int(float(val))
         except:
             pass
-        return "No clipping" if val == "0" else val
+        return "No clipping" if val == 0 else val
     return val
 
 def plot_multi_loss(files, exclude_key):
@@ -225,6 +226,16 @@ def bad_usage():
     print("  For MAE:      python visualize.py <csv_file1> <csv_file2> [<csv_file3> <csv_file4>] -e")
     exit(1)
 
+def parse_for_sorting(val):
+    """
+    Attempt to parse a string as float for numeric sorting.
+    If it fails, return the string itself for alphabetical fallback.
+    """
+    try:
+        return float(val)
+    except ValueError:
+        return val
+
 if __name__ == '__main__':
     # Parse command-line arguments.
     args = sys.argv[1:]
@@ -266,6 +277,8 @@ if __name__ == '__main__':
         print(f"Found differing keys: {diff_keys}")
         exit(1)
     exclude_key = diff_keys[0]
+
+    files.sort(key=lambda f: parse_for_sorting(extract_hp(f)[exclude_key]))
 
     if mode == "accuracy":
         try:
