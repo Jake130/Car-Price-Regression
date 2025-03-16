@@ -1,12 +1,9 @@
 """
 Visualization Script for Training Loss, Development Loss, and Accuracy
 
-by Alex JPS
-2024-06-03
+by Alex João Peterson Santos
+March 16, 2025
 CS 472
-
-Usage:
-python3 visualize.py <model curves CSV file>
 """
 
 # imports
@@ -29,38 +26,59 @@ def generate_subtitle(filename):
     model_name = model_name_match.group("model_name")
     
     # Extract hyperparameters
-    if model_name == "basic_nn1":
-        # Pattern: {}_{}x{}_bs{}_lr{}_sg{}_lk{}_curves.csv
-        match = re.match((
-            r'(?P<model_name>.+?)(?=_[0-9])_' # model name
-            r'(?P<d>\d+)x(?P<w>\d+)_' # depth and width
-            r'bs(?P<bs>\d+)_' # batch size
-            r'lr(?P<lr>[\d\.]+)_' # learning rate
-            r'sg(?P<sg>[\d\.]+)_' # SGD momentum
-            r'lk(?P<lk>[\d\.]+)_curves\.csv' # leaky relu value
-        ), filename)
-    else:
-        # Pattern: {}_{}x{}_bs{}_lr{}_sg{}_rl{}_curves.csv
-        match = re.match((
-            r'(?P<model_name>.+?)(?=_[0-9])_' # model name
-            r'(?P<d>\d+)x(?P<w>\d+)_' # depth and width
-            r'bs(?P<bs>\d+)_' # batch size
-            r'lr(?P<lr>[\d\.]+)_' # learning rate
-            r'sg(?P<sg>[\d\.]+)_' # SGD momentum
-            r'rl(?P<rl>[\d\.]+)_curves\.csv' # use ReLU
-        ), filename)
+    # if model_name == "basic_nn1":
+    #     # Pattern: {}_{}x{}_bs{}_lr{}_sg{}_lk{}_curves.csv
+    #     match = re.match((
+    #         r'(?P<model_name>.+?)(?=_[0-9])_' # model name
+    #         r'(?P<d>\d+)x(?P<w>\d+)_' # depth and width
+    #         r'bs(?P<bs>\d+)_' # batch size
+    #         r'lr(?P<lr>[\d\.]+)_' # learning rate
+    #         r'sg(?P<sg>-?[\d\.]+)_' # SGD momentum
+    #         r'lk(?P<lk>[\d\.]+)_curves\.csv' # leaky relu value
+    #     ), filename)
+    # elif model_name == "basic_nn0":
+    #     # Pattern: {}_{}x{}_bs{}_lr{}_sg{}_rl{}_curves.csv
+    #     match = re.match((
+    #         r'(?P<model_name>.+?)(?=_[0-9])_' # model name
+    #         r'(?P<d>\d+)x(?P<w>\d+)_' # depth and width
+    #         r'bs(?P<bs>\d+)_' # batch size
+    #         r'lr(?P<lr>[\d\.]+)_' # learning rate
+    #         r'sg(?P<sg>-?[\d\.]+)_' # SGD momentum
+    #         r'rl(?P<rl>[\d\.]+)_curves\.csv' # use ReLU
+    #     ), filename)
+    assert model_name == "basic_nn2"
+    # Pattern: {}_{}x{}_bs{}_lr{}_sg{}_af{}_gc{}_ls{}_curves.csv
+    match = re.match((
+        r'(?P<model_name>.+?)(?=_[0-9])_'  # model name
+        r'(?P<d>\d+)x(?P<w>\d+)_'  # depth and width
+        r'bs(?P<bs>\d+)_'  # batch size
+        r'lr(?P<lr>[\d\.]+)_'  # learning rate
+        r'sg(?P<sg>-?[\d\.]+)_'  # SGD momentum (including negative numbers)
+        r'af(?P<af>[\d\.]+)_'  # activation function
+        r'gc(?P<gc>[\d\.]+)_'  # gradient clipping norm
+        r'ls(?P<ls>[\d\.]+)_curves\.csv'  # learning rate schedule
+    ), filename)
 
     if not match:
         raise ValueError(f"Could not extract hyperparameters from filename: {filename}")
     hp = match.groupdict()
 
+    af = {
+        "0": "Sigmoid",
+        "1": "ReLU",
+        "2": "Leaky ReLU"
+    }[hp['af']]
+
     # Generate subtitle from extracted hyperparameters
-    subtitle = f"{hp['d']}x{hp['w']}, {hp['bs']}-batches, learn rate {hp['lr']}, "
-    subtitle += "AdamW, " if hp['sg'] == "-1" else f"SGD {hp['sg']}, "
-    if hp['model_name'] == "basic_nn0":
-        subtitle += "ReLU" if 'rl' in hp and hp['rl'] == "1" else "Sigmoid"
-    if hp['model_name'] == "basic_nn1":
-        subtitle += "Leaky ReLU" if 'lk' in hp and hp['lk'] == "1" else "ReLU"
+    subtitle = f"""
+{hp['d']}x{hp['w']}, {hp['bs']}-batches, learn rate {hp['lr']} {"(no sched.)" if hp['ls'] == "0" else "on " + hp['ls'] + " schedule"},
+{"AdamW optimizer" if hp['sg'] == "-1" else f"SGD optimizer, momentum {hp['sg']}"}, {af} activation, grad. clipping {int(float(hp['gc']))}
+"""
+    # subtitle += "AdamW, " if hp['sg'] == "-1" else f"SGD {hp['sg']}, "
+    # if hp['model_name'] == "basic_nn0":
+    #     subtitle += "ReLU" if 'rl' in hp and hp['rl'] == "1" else "Sigmoid"
+    # if hp['model_name'] == "basic_nn1":
+    #     subtitle += "Leaky ReLU" if 'lk' in hp and hp['lk'] == "1" else "ReLU"
 
     return subtitle
 
@@ -94,12 +112,26 @@ def plot_accuracy(filepath, margin):
         y_lim=(0, 1)
     )
 
+def plot_error(argv):
+    data = pd.read_csv(argv[1])
+    plot(
+        suptitle="Mean Absolute Error (MAE) on validation set",
+        title=generate_subtitle(argv[1]),
+        epochs=data['Epoch'],
+        black_line=data['val avg batch mae'],
+        grey_line=None,
+        y_label='MAE',
+        black_label=None,
+        grey_label=None,
+        y_lim=None
+    )
+
 
 def plot(suptitle, title, epochs, black_line, grey_line, y_label, black_label, grey_label, y_lim = None):
     # titles and spacing
     plt.suptitle(suptitle, fontsize=18, ha='center')
-    plt.title(title, fontsize=14, pad=28, ha='center')
-    plt.subplots_adjust(top=0.80)
+    plt.title(title, fontsize=14, pad=10, ha='center')
+    plt.subplots_adjust(top=0.75)
 
     # limit number of epochs shown
     plt.xlim(0, MAX_EPOCHS)
@@ -131,6 +163,7 @@ def plot(suptitle, title, epochs, black_line, grey_line, y_label, black_label, g
 def bad_usage():
     print("Accuracy: python script.py <csv_file_path> -m <margin>")
     print("Loss: python script.py <csv_file_path> -l")
+    print("MAE: python script.py <csv_file_path> -e")
     exit(1)
 
 if __name__ == '__main__':
@@ -145,5 +178,8 @@ if __name__ == '__main__':
         exit(0)
     if sys.argv[2] == "-l":
         plot_loss(sys.argv[1])
+        exit(0)
+    if sys.argv[2] == "-e": 
+        plot_error(sys.argv)
         exit(0)
     bad_usage()
